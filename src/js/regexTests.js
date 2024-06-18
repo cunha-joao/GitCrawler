@@ -42,7 +42,6 @@ function getDbConfigData(fileData) {
         }
     });
 
-    //console.log("Valid DB configuration lines with public DB_HOST:", validData);
     return validData;
 }
 
@@ -79,13 +78,30 @@ function analyseConfigData(validData) {
     return validData;
 }
 
+function isValidConfigData(data) {
+    const requiredFields = {
+        'DB_HOST': false,
+        'DB_USER': false,
+        'DB_PASSWORD': false,
+        'DB_NAME': false
+    };
+
+    data.forEach(line => {
+        if (line.includes('DB_HOST')) requiredFields['DB_HOST'] = true;
+        if (line.includes('DB_USER')) requiredFields['DB_USER'] = true;
+        if (line.includes('DB_PASSWORD')) requiredFields['DB_PASSWORD'] = true;
+        if (line.includes('DB_NAME')) requiredFields['DB_NAME'] = true;
+    });
+
+    return Object.values(requiredFields).every(field => field);
+}
+
 const test1 = [
     'DATABASE_URL="xx"',
-    'DB_PASSWORD="Yes"',
+    'DB_password="Yes"',
     'DB_HOST="1.1.1.1"',
     'DB_PORT="XD"',
     'DB_USER="user"',
-    'DB_NAME="aName"',
     ];
 
 const test2 = [
@@ -100,7 +116,7 @@ const test2 = [
 const test3 = [
     'DATABASE_URL="xx"',
     'DB_PASSWORD=Yes',
-    'DB_HOST="2001:4860:4860::8888"',
+    'DB_HOST=',
     'DB_PORT="XD"',
     "DB_USER='user'",
     'DB_NAME="aName"',
@@ -109,7 +125,7 @@ const test3 = [
 const test4 = [
     'DATABASE_URL="xx"',
     'DB_PASSWORD="No"',
-    'DB_HOST="fd12:3456:789a:1::1"',
+    'SECRET_DB_HOST="1.1.1.1"',
     'DB_PORT="XD"',
     'DB_USER="user"',
     'DB_NAME="aName"',
@@ -119,25 +135,19 @@ const test4 = [
 
 function main() {
     try {
-        let validData1 = [];
-        data1 = getDbConfigData(test1);
-        validData1 = analyseConfigData(data1);
-        console.log("Valid Data1: " + validData1);
+        const tests = [test1, test2, test3, test4];
 
-        let validData2 = [];
-        data2 = getDbConfigData(test2);
-        validData2 = analyseConfigData(data2);
-        console.log("Valid Data2: " + validData2);
+        tests.forEach((test, index) => {
+            let data = getDbConfigData(test);
+            let validData = analyseConfigData(data);
+            let isValid = isValidConfigData(validData);
 
-        let validData3 = [];
-        data3 = getDbConfigData(test3);
-        validData3 = analyseConfigData(data3);
-        console.log("Valid Data3: " + validData3);
-
-        let validData4 = [];
-        data4 = getDbConfigData(test4);
-        validData4 = analyseConfigData(data4);
-        console.log("Valid Data4: " + validData4);
+            if (isValid) {
+                console.log(`Valid Data${index + 1}:`, validData);
+            } else {
+                console.log(`Data${index + 1} is not valid.`);
+            }
+        });
 
         
     } catch (error) {
