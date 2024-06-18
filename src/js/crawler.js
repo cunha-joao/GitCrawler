@@ -1,86 +1,43 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
-const path = require('path');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const { HttpsProxyAgent } = require('https-proxy-agent');
 
-// Configuração do proxy local
-const proxyUrl = 'http://localhost:8000';
-const agent = new HttpsProxyAgent(proxyUrl);
-
-async function getFileUrls(searchUrl) {
-    try {
-        const { data: html } = await axios.get(searchUrl, { httpsAgent: agent });
-        const $ = cheerio.load(html);
-
-        const fileUrls = [];
-
-        $('a[href*="/blob/"]').each((i, element) => {
-            const href = $(element).attr('href');
-            if (href && href.includes('/blob/') && href.endsWith('.env')) {
-                const fileUrl = 'https://github.com' + href;
-                fileUrls.push(fileUrl.replace('/blob/', '/raw/'));
-            }
-        });
-
-        return fileUrls;
-
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
-
+// Function to fetch and parse content from a URL using the proxy
 async function analysePatterns(url) {
     try {
-        const { data: fileContent } = await axios.get(url, { httpsAgent: agent });
-        return fileContent;
+        const { data: html } = await axios.get(`http://localhost:3000/proxy?url=${encodeURIComponent(url)}`);
+        const $ = cheerio.load(html);
 
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
+        const fileData = [];
 
-async function fetchData(query) {
-    const searchUrl = `https://github.com/search?q=${encodeURIComponent(query)}&type=code`;
+        const codeLines = $('div.react-file-line');
 
-    try {
-        const fileUrls = await getFileUrls(searchUrl);
-        const allData = [];
+        for (let i = 0; i < codeLines.length; i++) {
+            const line = codeLines[i];
 
-        for (const fileUrl of fileUrls) {
-            const fileContent = await analysePatterns(fileUrl);
-            if (fileContent) {
-                allData.push({ fileUrl, fileContent });
-            }
-            await delay(1000); // Delay of 1 second between requests
+            const pl_v = $(line).find('.pl-v').text();
+            const pl_k = $(line).find('.pl-k').text();
+            const pl_s = $(line).find('.pl-s').text();
+
+            const data = pl_v + pl_k + pl_s;
+            console.log(data);
+            fileData.push(data);
+            console.log(data);
         }
 
-        await saveToCsv(allData);
-
-        console.log('Data saved to CSV file successfully.');
-        return allData;
+        return fileData;
 
     } catch (error) {
         console.error('Error:', error.message);
     }
 }
 
-async function saveToCsv(data) {
-    const csvWriter = createCsvWriter({
-        path: 'env_files_data.csv',
-        header: [
-            { id: 'fileUrl', title: 'File URL' },
-            { id: 'fileContent', title: 'File Content' }
-        ]
-    });
-
-    await csvWriter.writeRecords(data);
+async function fetchData(){
+    try {
+        const data = await analysePatterns('https://github.com/nightzjp/spider_dj/blob/2c3de79c97f02d0235598a0783c451a51d236722/.env#L6');
+        console.log(data);
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
 }
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const query = '.env db_host db_password';
-fetchData(query);
+fetchData();

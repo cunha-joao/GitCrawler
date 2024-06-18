@@ -1,13 +1,26 @@
-const http = require('http');
-const httpProxy = require('http-proxy');
+const express = require('express');
+const axios = require('axios');
+const app = express();
+const PORT = 3000;
 
-// Cria o proxy
-const proxy = httpProxy.createProxyServer({});
-
-// Cria o servidor que vai usar o proxy
-const server = http.createServer((req, res) => {
-proxy.web(req, res, { target: 'https://github.com' });
+// Middleware to handle requests and forward them to the target URL
+app.use('/proxy', async (req, res) => {
+  try {
+    const targetUrl = req.query.url; // Get the target URL from the query parameter
+    if (!targetUrl) {
+      return res.status(400).send('Target URL is required');
+    }
+    
+    // Fetch content from the target URL
+    const response = await axios.get(targetUrl);
+    
+    // Send the response back to the client
+    res.send(response.data);
+  } catch (error) {
+    res.status(500).send('Error fetching the target URL');
+  }
 });
 
-console.log('Proxy server is running on http://localhost:8000');
-server.listen(8000);
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+});
