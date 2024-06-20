@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
 async function getData(url) {
     try {
@@ -94,12 +95,49 @@ function isValidConfigData(data) {
     return Object.values(requiredFields).every(field => field);
 }
 
+function buildDbConnectionCommands(configArray) {
+    let config = {};
+    
+    configArray.forEach(item => {
+        let [key, value] = item.split('=');
+        key = key.trim();
+        value = value.replace(/"/g, '').trim();
+        config[key] = value;
+    });
+
+    const mysqlConnection = `mysql -h ${config['DB_HOST']} -u ${config['DB_USER']} -p${config['DB_PASSWORD']} ${config['DB_NAME']}`;
+    const postgreConnection = `PGPASSWORD=${config['DB_PASSWORD']} psql -h ${config['DB_HOST']} -U ${config['DB_USER']} -d ${config['DB_NAME']}`;
+
+    return {
+        mysql: mysqlConnection,
+        postgresql: postgreConnection
+    };
+}
+
+
 module.exports = {
     getData,
     getDbConfigData,
     analyseConfigData,
-    isValidConfigData
+    isValidConfigData,
+    buildDbConnectionCommands
 };
+
+
+// Example usage:
+const test2 = [
+    'DB_PASSWORD="No"',
+    'DB_HOST="172.16.0.1"',
+    'DB_USER="user"',
+    'DB_NAME="aName"',
+];
+
+const test1 = [
+    'DB_PASSWORD=No',
+    'DB_HOST=172.16.0.1',
+    'DB_USER=user',
+    'DB_NAME=aName',
+];
 
 //Para testar o regex
 /*
@@ -112,10 +150,8 @@ const test1 = [
     ];
 
 const test2 = [
-    'DATABASE_URL="xx"',
     'DB_PASSWORD="No"',
     'DB_HOST="172.16.0.1"',
-    'DB_PORT="XD"',
     'DB_USER="user"',
     'DB_NAME="aName"',
     ];
@@ -138,24 +174,11 @@ const test4 = [
     'DB_NAME="aName"',
     ];
 
+*/
 
-
-function main() {
+async function main() {
     try {
-        const tests = [test1, test2, test3, test4];
-
-        tests.forEach((test, index) => {
-            let data = getDbConfigData(test);
-            let validData = analyseConfigData(data);
-            let isValid = isValidConfigData(validData);
-
-            if (isValid) {
-                console.log(`Valid Data${index + 1}:`, validData);
-            } else {
-                console.log(`Data${index + 1} is not valid.`);
-            }
-        });
-
+        buildDbConnectionCommands(test1);
         
     } catch (error) {
         console.error('Error:', error.message);
@@ -163,4 +186,4 @@ function main() {
 }
 
 main();
-*/
+
