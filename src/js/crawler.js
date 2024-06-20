@@ -1,43 +1,34 @@
+//Antes de executar instalar axios e cheerio com npm install axios cheerios
+
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
-// Function to fetch and parse content from a URL using the proxy
-async function analysePatterns(url) {
+const url = 'https://github.com/search?q=path%3A**%2F.env%20db_password%3D%20db_host%3D&type=code';
+
+const cookies = '_octo=GH1.1.338388154.1708457847; _device_id=6bb985c7f358441a51c1be06aa2a8379; user_session=IB50Cy1acYo8Haf0KGBpb5Q6FZtMJAHSeBOYpmRKks7ss0mK; logged_in=yes; dotcom_user=cunha-joao; tz=Europe%2FLisbon;';
+
+async function downloadPage() {
     try {
-        const { data: html } = await axios.get(`http://localhost:3000/proxy?url=${encodeURIComponent(url)}`);
+        const response = await axios.get(url, {
+            headers: {
+                'Cookie': cookies,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+            }
+        });
+        const html = response.data;
+
+        fs.writeFileSync('page.html', html, 'utf-8');
+        console.log('Página HTML baixada e salva com sucesso.');
+
         const $ = cheerio.load(html);
-
-        const fileData = [];
-
-        const codeLines = $('div.react-file-line');
-
-        for (let i = 0; i < codeLines.length; i++) {
-            const line = codeLines[i];
-
-            const pl_v = $(line).find('.pl-v').text();
-            const pl_k = $(line).find('.pl-k').text();
-            const pl_s = $(line).find('.pl-s').text();
-
-            const data = pl_v + pl_k + pl_s;
-            console.log(data);
-            fileData.push(data);
-            console.log(data);
-        }
-
-        return fileData;
+        $('a').each((index, element) => {
+            console.log($(element).attr('href'));
+        });
 
     } catch (error) {
-        console.error('Error:', error.message);
+        console.error('Erro ao baixar a página:', error);
     }
 }
 
-async function fetchData(){
-    try {
-        const data = await analysePatterns('https://github.com/nightzjp/spider_dj/blob/2c3de79c97f02d0235598a0783c451a51d236722/.env#L6');
-        console.log(data);
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
-
-fetchData();
+downloadPage();
