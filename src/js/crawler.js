@@ -1,13 +1,16 @@
-//Antes de executar instalar axios e cheerio com npm install axios cheerios
+//Antes de executar instalar axios e cheerio com npm install axios cheerio
 
 const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
+const { getData, getDbConfigData, analyseConfigData, isValidConfigData } = require('./regexTests');
 
-const url = 'https://github.com/search?q=path%3A**%2F.env%20db_password%3D%20db_host%3D&type=code';
+const query = "path:**/.env db_password= db_host="
+const url = 'https://github.com/search?q=path%3A**%2F.env+db_password%3D+db_host%3D4&type=code';
 
 const cookies = '_octo=GH1.1.338388154.1708457847; _device_id=6bb985c7f358441a51c1be06aa2a8379; user_session=IB50Cy1acYo8Haf0KGBpb5Q6FZtMJAHSeBOYpmRKks7ss0mK; logged_in=yes; dotcom_user=cunha-joao; tz=Europe%2FLisbon;';
 
+//Baixa a página dos resultados
 async function downloadPage() {
     try {
         const response = await axios.get(url, {
@@ -18,17 +21,69 @@ async function downloadPage() {
         });
         const html = response.data;
 
-        fs.writeFileSync('page.html', html, 'utf-8');
-        console.log('Página HTML baixada e salva com sucesso.');
-
-        const $ = cheerio.load(html);
-        $('a').each((index, element) => {
-            console.log($(element).attr('href'));
-        });
-
+        fs.writeFileSync('resultspage.html', html, 'utf-8');
+        console.log('Página HTML baixada com sucesso.');
     } catch (error) {
         console.error('Erro ao baixar a página:', error);
     }
 }
 
-downloadPage();
+// Filtra os Urls com ficheiros .env
+function findFileUrl() {
+    try {
+        const html = fs.readFileSync('resultsPage.html', 'utf-8');
+        const $ = cheerio.load(html);
+        const links = new Set();
+
+        $('a').each((index, element) => {
+            const href = $(element).attr('href');
+            if (href && href.includes('.env#')) {
+                // Remove o fragmento de linha (tudo após e incluindo '#')
+                const cleanedHref = href.split('#')[0];
+                // Adiciona https://github.com/ antes dos links relativos
+                const completeUrl = `https://github.com${cleanedHref}`;
+                links.add(completeUrl);
+            }
+        });
+
+        fs.writeFileSync('envLinks.txt', Array.from(links).join('\n'), 'utf-8');
+        console.log('Links encontrados e guardados com sucesso.');
+    } catch (error) {
+        console.error('Erro ao processar o arquivo HTML:', error);
+    }
+}
+
+// Função para aguardar um período de tempo (ms)
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Função para guardar o conteúdo dos Urls
+async function processEnvLinks() {
+    try {
+        const links = fs.readFileSync('envLinks.txt', 'utf-8').split('\n').filter(Boolean);
+
+        for (const link of links) {
+            console.log(`Processing link: ${link}`);
+            const fileData = await getData(link);
+
+            if (fileData) {
+                let data = getDbConfigData(fileData);
+                let validData = analyseConfigData(data);
+                let isValid = isValidConfigData(validData);
+
+                if (isValid) {
+                    console.log(`Valid Data from ${link}:`, validData);
+                } else {
+                    console.log(`Data from ${link} is not valid.`);
+                }
+            }
+            // Aguardar 10 segundos (5000 ms) antes de processar o próximo link
+            await sleep(10000);
+        }
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+
+downloadPage().then(findFileUrl).then(processEnvLinks);

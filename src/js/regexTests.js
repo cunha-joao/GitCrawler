@@ -20,11 +20,9 @@ async function getData(url) {
             const data = pl_v + pl_k + pl_s;
 
             fileData.push(data);
-            
         }
 
         return fileData;
-
     } catch (error) {
         console.error('Error:', error.message);
     }
@@ -96,6 +94,15 @@ function isValidConfigData(data) {
     return Object.values(requiredFields).every(field => field);
 }
 
+module.exports = {
+    getData,
+    getDbConfigData,
+    analyseConfigData,
+    isValidConfigData
+};
+
+//Para testar o regex
+/*
 const test1 = [
     'DATABASE_URL="xx"',
     'DB_password="Yes"',
@@ -156,4 +163,4 @@ function main() {
 }
 
 main();
-
+*/
