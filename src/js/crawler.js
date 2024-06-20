@@ -5,8 +5,11 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const { getData, getDbConfigData, analyseConfigData, isValidConfigData } = require('./regexTests');
 
+//Query que se mete na procura do GitHub
 const query = "path:**/.env db_password= db_host="
-const url = 'https://github.com/search?q=path%3A**%2F.env+db_password%3D+db_host%3D4&type=code';
+const encodedQuery = encodeURIComponent(query);
+//Apenas para a primeira página &p=1
+const url = `https://github.com/search?q=${encodedQuery}&type=code&p=1`;
 
 const cookies = '_octo=GH1.1.338388154.1708457847; _device_id=6bb985c7f358441a51c1be06aa2a8379; user_session=IB50Cy1acYo8Haf0KGBpb5Q6FZtMJAHSeBOYpmRKks7ss0mK; logged_in=yes; dotcom_user=cunha-joao; tz=Europe%2FLisbon;';
 
