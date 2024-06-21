@@ -106,12 +106,11 @@ function buildDbConnectionCommands(configArray) {
     });
 
     const mysqlConnection = `mysql -h ${config['DB_HOST']} -u ${config['DB_USER']} -p${config['DB_PASSWORD']} ${config['DB_NAME']}`;
-    const postgreConnection = `PGPASSWORD=${config['DB_PASSWORD']} psql -h ${config['DB_HOST']} -U ${config['DB_USER']} -d ${config['DB_NAME']}`;
+    const postgreConnection = `psql -h ${config['DB_HOST']} -U ${config['DB_USER']} -d ${config['DB_NAME']} -W ||password${config['DB_PASSWORD']}`;
 
-    return {
-        mysql: mysqlConnection,
-        postgresql: postgreConnection
-    };
+    fs.appendFileSync("./commands.txt", `PostgreSQL Command: ${postgreConnection}\n`);
+    fs.appendFileSync("./commands.txt", `MySQL Command: ${mysqlConnection}\n`);
+    
 }
 
 
@@ -122,68 +121,3 @@ module.exports = {
     isValidConfigData,
     buildDbConnectionCommands
 };
-
-
-// Example usage:
-const test2 = [
-    'DB_PASSWORD="No"',
-    'DB_HOST="172.16.0.1"',
-    'DB_USER="user"',
-    'DB_NAME="aName"',
-];
-
-const test1 = [
-    'DB_PASSWORD=No',
-    'DB_HOST=172.16.0.1',
-    'DB_USER=user',
-    'DB_NAME=aName',
-];
-
-//Para testar o regex
-/*
-const test1 = [
-    'DATABASE_URL="xx"',
-    'DB_password="Yes"',
-    'DB_HOST="1.1.1.1"',
-    'DB_PORT="XD"',
-    'DB_USER="user"',
-    ];
-
-const test2 = [
-    'DB_PASSWORD="No"',
-    'DB_HOST="172.16.0.1"',
-    'DB_USER="user"',
-    'DB_NAME="aName"',
-    ];
-
-const test3 = [
-    'DATABASE_URL="xx"',
-    'DB_PASSWORD=Yes',
-    'DB_HOST=',
-    'DB_PORT="XD"',
-    "DB_USER='user'",
-    'DB_NAME="aName"',
-    ];
-
-const test4 = [
-    'DATABASE_URL="xx"',
-    'DB_PASSWORD="No"',
-    'SECRET_DB_HOST="1.1.1.1"',
-    'DB_PORT="XD"',
-    'DB_USER="user"',
-    'DB_NAME="aName"',
-    ];
-
-*/
-
-async function main() {
-    try {
-        buildDbConnectionCommands(test1);
-        
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
-
-main();
-
